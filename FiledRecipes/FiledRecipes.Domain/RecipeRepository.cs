@@ -128,15 +128,180 @@ namespace FiledRecipes.Domain
             }
         }
 
+//Här följer metoderna som saknas
 
+        //Här läses receptet in
         public void Load()
         {
-            throw new NotImplementedException();
+            try
+            {
+                //Skapa lista som kan innehålla referenser till receptobjekt
+                List<IRecipe> recipes = new List<IRecipe>();
+
+                //Öppna textfilen för läsning.
+                using (StreamReader reader = new StreamReader(_path))
+                {
+                    
+                    //Variabler
+                    string line;
+                    RecipeReadStatus status = RecipeReadStatus.Indefinite;
+                    Recipe theRecipe = null;
+
+                    //Läs rad från textfilen tills det är slut på filen.
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        //Om det är en tom rad... läses nästa rad in istället för att läsa andra if-satser
+                        if (line != "")
+                        {
+                            //Om det är en avdelning för nytt recept...
+                            if (line == SectionRecipe)
+                            {
+                                //Sätt status till att nästa rad som läses in kommer att vara receptets namn.
+                                status = RecipeReadStatus.New;
+                            }
+                            //eller om det är avdelningen för ingredienser...
+                            else if (line == SectionIngredients)
+                            {
+                                //...sätt status till att kommande rader som läses in kommer att vara receptets ingredienser.
+                                status = RecipeReadStatus.Ingredient;
+                            }
+                            //eller om det är avdelningen för instruktioner...
+                            else if (line == SectionInstructions)
+                            {
+                                //...sätt status till att kommande rader som läses in kommer att vara receptets instruktioner.
+                                status = RecipeReadStatus.Instruction;
+                            }
+                            //...annars är det ett namn, en ingrediens eller en instruktion 
+                            else
+                            {
+                                //Switch-sats som kollar vad raden ska tolkas som
+                                switch (status)
+                                {
+                                    //Om status är satt att raden ska tolkas som ett recepts namn...
+                                    case RecipeReadStatus.New:
+
+                                        //Lägger föregående recept i listan med recept, om inte receptobjektet är tomt vill säga
+                                        if (theRecipe != null)
+                                        {
+                                            //Lägger till föregående recept till listan med recept innan receptobjektet skrivs över
+                                            recipes.Add(theRecipe);
+                                        }
+
+                                        //Skapa nytt receptobjekt med receptets namn
+                                        theRecipe = new Recipe(line);
+
+                                        break;
+
+                                    //...eller om status är satt att raden ska tolkas som en ingrediens...
+                                    case RecipeReadStatus.Ingredient:
+
+                                        //Dela upp raden i delar genom att använda metoden Split() i klassen String. 
+                                        //De olika delarna separeras åt med semikolon varför det alltid ska bli tre delar.
+                                        string[] values = line.Split(new char[] { ';' });
+
+                                        //Om antalet delar inte är tre, är något fel varför ett undantag av typen FileFormatException ska kastas.
+                                        if (values.Length != 3)
+                                        {
+                                            throw new FileFormatException("Antalet delar i raden med ingrediensen är inte tre.");
+
+                                        }
+
+                                        //Skapa ett ingrediensobjekt och initiera det med de tre delarna för mängd, mått och namn.
+                                        Ingredient ingredient = new Ingredient();
+                                        ingredient.Amount = values[0];
+                                        ingredient.Measure = values[1];
+                                        ingredient.Name = values[2];
+
+                                        //Lägg till ingrediensen till receptets lista med ingredienser.
+                                        theRecipe.Add(ingredient);
+
+                                        break;
+
+                                    //...eller om status är satt att raden ska tolkas som en instruktion...
+                                    case RecipeReadStatus.Instruction:
+
+                                        //Lägg till raden till receptets lista med instruktioner.
+                                        theRecipe.Add(line);
+
+                                        break;
+
+                                    //annars...är något fel varför ett undantag av typen FileFormatException ska kastas.
+                                    default:
+                                        throw new FileFormatException("Något gick fel!");
+                                }
+
+                            }
+                        }
+                    }
+
+                    //Lägger till det sista receptet i listan med recept
+                    recipes.Add(theRecipe);
+                }
+
+                //Tar bort tomma platser i listan med recept
+                recipes.TrimExcess();
+
+                //Sortera listan med recept med avseende på receptens namn.
+                IEnumerable<IRecipe> sortedRecipes = recipes.OrderBy(recipe => recipe.Name);
+
+                //Tilldela avsett fält i klassen, _recipes, en referens till den sorterade listan.
+                _recipes = new List<IRecipe>(sortedRecipes);
+
+                //Tilldela avsedd egenskap i klassen, IsModified, ett värde som indikerar att listan med recept är oförändrad.
+                IsModified = false;
+
+                //Utlös händelse om att recept har lästs in genom att anropa metoden OnRecipesChanged och skicka med parametern EventArgs.Empty.
+                OnRecipesChanged(EventArgs.Empty);
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
         }
 
+        //Öppnar en textfil och skriver recepten rad för rad till textfilen
         public void Save()
         {
-            throw new NotImplementedException();
+            try
+            {
+                //Öppnar textfilen som recepten ska skrivas till
+                using (StreamWriter writer = new StreamWriter(_path))
+                {
+                    //För varje recept i listan med recept
+                    foreach (Recipe recipe in _recipes)
+                    {
+                        //Skriver rad med formatering för avdelningen med recept och sedan receptets namn
+                        writer.WriteLine(SectionRecipe);
+                        writer.WriteLine(recipe.Name);
+
+                        //Skriver rad med formatering för avdelningen med ingredienser
+                        writer.WriteLine(SectionIngredients);
+
+                        //Skriver ut varje ingrediens i receptet med formatering för ingredienserna
+                        foreach (Ingredient ingredient in recipe.Ingredients)
+                        {
+                            writer.WriteLine("{0};{1};{2}", ingredient.Amount, ingredient.Measure, ingredient.Name);
+
+                        }
+
+                        //Skriver rad med formatering för avdelningen med instruktioner
+                        writer.WriteLine(SectionInstructions);
+
+                        //Skriver ut varje instruktion i receptet
+                        foreach (string instruction in recipe.Instructions)
+                        {
+                            writer.WriteLine(instruction);
+                        }
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }
