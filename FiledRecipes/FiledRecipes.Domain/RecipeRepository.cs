@@ -133,13 +133,14 @@ namespace FiledRecipes.Domain
         //Här läses receptet in
         public void Load()
         {
-            //Skapa lista som kan innehålla referenser till receptobjekt
+            //Skapa lista som kan innehålla referenser till receptobjekt. Bättre än array när det gäller strängar. Antalet platser 4, 8, 16
             List<IRecipe> recipe = new List<IRecipe>();
 
-            //Variabler
+            
             string line;
             RecipeReadStatus status = RecipeReadStatus.Indefinite;
             Recipe theRecipe = null;
+
 
             try
             {
@@ -152,13 +153,13 @@ namespace FiledRecipes.Domain
                         //Om det inte är en tom rad så går han in i if-satsen... läses nästa rad in istället för att läsa andra if-satser
                         if (line != "")
                         {
-                            //Om det är en avdelning för nytt recept...
+                            //Om det är en stycke/section för nytt recept...
                             if (line == SectionRecipe)
                             {
                                 //Sätt status till att nästa rad som läses in kommer att vara receptets namn.
                                 status = RecipeReadStatus.New;
                             }
-                            //eller om det är avdelningen för ingredienser...
+                            //eller om det är stycke/section för ingredienser...
                             else if (line == SectionIngredients)
                             {
                                 //...sätt status till att kommande rader som läses in kommer att vara receptets ingredienser.
@@ -173,7 +174,7 @@ namespace FiledRecipes.Domain
                             //...annars är det ett namn, en ingrediens eller en instruktion 
                             else
                             {
-                                //Switch-sats som kollar vad raden ska tolkas som
+                                //If-sats som kollar vad raden ska tolkas som
                                 if (status == RecipeReadStatus.New)
                                 {
                                     //Om status är satt att raden ska tolkas som ett recepts namn...
