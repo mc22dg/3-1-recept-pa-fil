@@ -128,29 +128,28 @@ namespace FiledRecipes.Domain
             }
         }
 
-//Här följer metoderna som saknas
+//Metoderna som saknas
 
         //Här läses receptet in
         public void Load()
         {
+            //Skapa lista som kan innehålla referenser till receptobjekt
+            List<IRecipe> recipe = new List<IRecipe>();
+
+            //Variabler
+            string line;
+            RecipeReadStatus status = RecipeReadStatus.Indefinite;
+            Recipe theRecipe = null;
+
             try
             {
-                //Skapa lista som kan innehålla referenser till receptobjekt
-                List<IRecipe> recipes = new List<IRecipe>();
-
-                //Öppna textfilen för läsning.
+                //Anropar using för att kunna använda StreamReader. Öppna textfilen för läsning.
                 using (StreamReader reader = new StreamReader(_path))
                 {
-                    
-                    //Variabler
-                    string line;
-                    RecipeReadStatus status = RecipeReadStatus.Indefinite;
-                    Recipe theRecipe = null;
-
-                    //Läs rad från textfilen tills det är slut på filen.
+                    //Läs rad från textfilen tills det är slut på filen. ReadLine = metod i .NET ramverket
                     while ((line = reader.ReadLine()) != null)
                     {
-                        //Om det är en tom rad... läses nästa rad in istället för att läsa andra if-satser
+                        //Om det inte är en tom rad så går han in i if-satsen... läses nästa rad in istället för att läsa andra if-satser
                         if (line != "")
                         {
                             //Om det är en avdelning för nytt recept...
@@ -175,74 +174,64 @@ namespace FiledRecipes.Domain
                             else
                             {
                                 //Switch-sats som kollar vad raden ska tolkas som
-                                switch (status)
+                                if (status == RecipeReadStatus.New)
                                 {
                                     //Om status är satt att raden ska tolkas som ett recepts namn...
-                                    case RecipeReadStatus.New:
+                                    if (theRecipe != null)
+                                    {
+                                        recipe.Add(theRecipe); //Anropar Add och skickar med 
+                                    }
+                                    theRecipe = new Recipe(line); //Skapar nytt objekt som skikar med line
+                                }
+                                else if (status == RecipeReadStatus.Ingredient)
+                                {
+                                    string[] values = line.Split(new char[] { ';' });
 
-                                        //Lägger föregående recept i listan med recept, om inte receptobjektet är tomt vill säga
-                                        if (theRecipe != null)
-                                        {
-                                            //Lägger till föregående recept till listan med recept innan receptobjektet skrivs över
-                                            recipes.Add(theRecipe);
-                                        }
+                                    //Om antalet delar inte är tre, är något fel varför ett undantag av typen FileFormatException ska kastas.
+                                    if (values.Length != 3)
+                                    {
+                                        throw new FileFormatException("Antalet delar i raden med ingrediensen är inte tre.");
 
-                                        //Skapa nytt receptobjekt med receptets namn
-                                        theRecipe = new Recipe(line);
+                                    }
 
-                                        break;
+                                    //Skapa ett ingrediensobjekt och initiera det med de tre delarna för mängd, mått och namn.
+                                    Ingredient ingredient = new Ingredient();
+                                    ingredient.Amount = values[0];
+                                    ingredient.Measure = values[1];
+                                    ingredient.Name = values[2];
 
-                                    //...eller om status är satt att raden ska tolkas som en ingrediens...
-                                    case RecipeReadStatus.Ingredient:
+                                    //Lägg till ingrediensen till receptets lista med ingredienser.
+                                    theRecipe.Add(ingredient);
 
-                                        //Dela upp raden i delar genom att använda metoden Split() i klassen String. 
-                                        //De olika delarna separeras åt med semikolon varför det alltid ska bli tre delar.
-                                        string[] values = line.Split(new char[] { ';' });
-
-                                        //Om antalet delar inte är tre, är något fel varför ett undantag av typen FileFormatException ska kastas.
-                                        if (values.Length != 3)
-                                        {
-                                            throw new FileFormatException("Antalet delar i raden med ingrediensen är inte tre.");
-
-                                        }
-
-                                        //Skapa ett ingrediensobjekt och initiera det med de tre delarna för mängd, mått och namn.
-                                        Ingredient ingredient = new Ingredient();
-                                        ingredient.Amount = values[0];
-                                        ingredient.Measure = values[1];
-                                        ingredient.Name = values[2];
-
-                                        //Lägg till ingrediensen till receptets lista med ingredienser.
-                                        theRecipe.Add(ingredient);
-
-                                        break;
-
-                                    //...eller om status är satt att raden ska tolkas som en instruktion...
-                                    case RecipeReadStatus.Instruction:
-
-                                        //Lägg till raden till receptets lista med instruktioner.
-                                        theRecipe.Add(line);
-
-                                        break;
+                                }
+                                //...eller om status är satt att raden ska tolkas som en instruktion...
+                                else if (status == RecipeReadStatus.Instruction)
+                                {
+                                    //Lägg till raden till receptets lista med instruktioner.
+                                    theRecipe.Add(line);
+                                }
+                                else
+                                {
 
                                     //annars...är något fel varför ett undantag av typen FileFormatException ska kastas.
-                                    default:
-                                        throw new FileFormatException("Något gick fel!");
+
+                                    throw new FileFormatException("Något gick fel!");
                                 }
+
 
                             }
                         }
                     }
 
                     //Lägger till det sista receptet i listan med recept
-                    recipes.Add(theRecipe);
+                    recipe.Add(theRecipe);
                 }
 
                 //Tar bort tomma platser i listan med recept
-                recipes.TrimExcess();
+                recipe.TrimExcess();
 
                 //Sortera listan med recept med avseende på receptens namn.
-                IEnumerable<IRecipe> sortedRecipes = recipes.OrderBy(recipe => recipe.Name);
+                IEnumerable<IRecipe> sortedRecipes = recipe.OrderBy(ReadRecipeSatatus => ReadRecipeSatatus.Name);
 
                 //Tilldela avsett fält i klassen, _recipes, en referens till den sorterade listan.
                 _recipes = new List<IRecipe>(sortedRecipes);
@@ -260,42 +249,19 @@ namespace FiledRecipes.Domain
             }
 
         }
+    
 
-        //Öppnar en textfil och skriver recepten rad för rad till textfilen
+
+
+//Öppnar en textfil och skriver recepten rad för rad till textfilen
+     //Öppnar en textfil och skriver recepten rad för rad till textfilen
         public void Save()
         {
             try
             {
-                //Öppnar textfilen som recepten ska skrivas till
                 using (StreamWriter writer = new StreamWriter(_path))
                 {
-                    //För varje recept i listan med recept
-                    foreach (Recipe recipe in _recipes)
-                    {
-                        //Skriver rad med formatering för avdelningen med recept och sedan receptets namn
-                        writer.WriteLine(SectionRecipe);
-                        writer.WriteLine(recipe.Name);
-
-                        //Skriver rad med formatering för avdelningen med ingredienser
-                        writer.WriteLine(SectionIngredients);
-
-                        //Skriver ut varje ingrediens i receptet med formatering för ingredienserna
-                        foreach (Ingredient ingredient in recipe.Ingredients)
-                        {
-                            writer.WriteLine("{0};{1};{2}", ingredient.Amount, ingredient.Measure, ingredient.Name);
-
-                        }
-
-                        //Skriver rad med formatering för avdelningen med instruktioner
-                        writer.WriteLine(SectionInstructions);
-
-                        //Skriver ut varje instruktion i receptet
-                        foreach (string instruction in recipe.Instructions)
-                        {
-                            writer.WriteLine(instruction);
-                        }
-                    }
-
+                    writer.WriteLine(_recipes);
                 }
             }
             catch (Exception ex)
