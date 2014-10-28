@@ -217,30 +217,28 @@ namespace FiledRecipes.Domain
 
                                     throw new FileFormatException("Något gick fel!");
                                 }
-
-
                             }
                         }
                     }
 
-                    //Lägger till det sista receptet i listan med recept
-                    recipe.Add(theRecipe);
+               //Lägger till det sista receptet i listan med recept
+                recipe.Add(theRecipe);
                 }
 
-                //Tar bort tomma platser i listan med recept
+               //Tar bort tomma platser i listan med recept
                 recipe.TrimExcess();
 
-                //Sortera listan med recept med avseende på receptens namn.
-                IEnumerable<IRecipe> sortedRecipes = recipe.OrderBy(ReadRecipeSatatus => ReadRecipeSatatus.Name);
+               //Sortera listan med recept med avseende på receptens namn.
+               IEnumerable<IRecipe> sortedRecipes = recipe.OrderBy(ReadRecipeSatatus => ReadRecipeSatatus.Name);
 
-                //Tilldela avsett fält i klassen, _recipes, en referens till den sorterade listan.
-                _recipes = new List<IRecipe>(sortedRecipes);
+               //Tilldela avsett fält i klassen, _recipes, en referens till den sorterade listan.
+               _recipes = new List<IRecipe>(sortedRecipes);
 
-                //Tilldela avsedd egenskap i klassen, IsModified, ett värde som indikerar att listan med recept är oförändrad.
-                IsModified = false;
+              //Tilldela avsedd egenskap i klassen, IsModified, ett värde som indikerar att listan med recept är oförändrad.
+               IsModified = false;
 
-                //Utlös händelse om att recept har lästs in genom att anropa metoden OnRecipesChanged och skicka med parametern EventArgs.Empty.
-                OnRecipesChanged(EventArgs.Empty);
+             //Utlös händelse om att recept har lästs in genom att anropa metoden OnRecipesChanged och skicka med parametern EventArgs.Empty.
+              OnRecipesChanged(EventArgs.Empty);
 
             }
             catch (Exception ex)
@@ -253,7 +251,7 @@ namespace FiledRecipes.Domain
 
 
 
-//Öppnar en textfil och skriver recepten rad för rad till textfilen
+
      //Öppnar en textfil och skriver recepten rad för rad till textfilen
         public void Save()
         {
