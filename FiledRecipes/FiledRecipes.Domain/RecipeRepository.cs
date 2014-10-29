@@ -150,7 +150,7 @@ namespace FiledRecipes.Domain
                     //Läs rad från textfilen tills det är slut på filen. ReadLine = metod i .NET ramverket
                     while ((line = reader.ReadLine()) != null)
                     {
-                        //Om det inte är en tom rad så går han in i if-satsen... läses nästa rad in istället för att läsa andra if-satser
+                        //Om det inte är en tom rad så går han in i if-satsen... 
                         if (line != "")
                         {
                             //Om det är en stycke/section för nytt recept...
@@ -184,9 +184,9 @@ namespace FiledRecipes.Domain
                                     }
                                     theRecipe = new Recipe(line); //Skapar nytt objekt som skikar med line
                                 }
-                                else if (status == RecipeReadStatus.Ingredient)
+                                else if (status == RecipeReadStatus.Ingredient) //
                                 {
-                                    string[] values = line.Split(new char[] { ';' });
+                                    string[] values = line.Split(new char[] { ';' }); //Här delas raden upp i delar. De olika delarna separeras åt med semikolon varför det alltid ska bli tre delar.
 
                                     //Om antalet delar inte är tre, är något fel varför ett undantag av typen FileFormatException ska kastas.
                                     if (values.Length != 3)
