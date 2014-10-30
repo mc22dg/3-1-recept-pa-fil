@@ -21,7 +21,7 @@ namespace FiledRecipes.Views
 
             //Skriver ut receptets ingredienser, rad för rad
             Console.WriteLine("\nIngredienser\n============");
-            foreach (Ingredient ingredient in recipe.Ingredients)
+            foreach (IIngredient ingredient in recipe.Ingredients)
             {
                 Console.WriteLine(ingredient);
             }
@@ -38,10 +38,11 @@ namespace FiledRecipes.Views
             }
         }
         //Visar alla recept
+
         public void Show(IEnumerable<IRecipe> recipes)
         {
             //För varje recept
-            foreach (Recipe recipe in recipes)
+            foreach (IRecipe recipe in recipes)
             {
                 //Visar receptet
                 Show(recipe);

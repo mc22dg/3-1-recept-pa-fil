@@ -134,13 +134,11 @@ namespace FiledRecipes.Domain
         public void Load()
         {
             //Skapa lista som kan innehålla referenser till receptobjekt. Bättre än array när det gäller strängar. Antalet platser 4, 8, 16
-            List<IRecipe> recipe = new List<IRecipe>();
-
+            List<IRecipe> recipes = new List<IRecipe>();
             
             string line;
             RecipeReadStatus status = RecipeReadStatus.Indefinite;
             Recipe theRecipe = null;
-
 
             try
             {
@@ -151,7 +149,7 @@ namespace FiledRecipes.Domain
                     while ((line = reader.ReadLine()) != null)
                     {
                         //Om det inte är en tom rad så går han in i if-satsen... 
-                        if (line != "")
+                        if (!String.IsNullOrWhiteSpace(line))
                         {
                             //Om det är en stycke/section för nytt recept...
                             if (line == SectionRecipe)
@@ -178,11 +176,8 @@ namespace FiledRecipes.Domain
                                 if (status == RecipeReadStatus.New)
                                 {
                                     //Om status är satt att raden ska tolkas som ett recepts namn...
-                                    if (theRecipe != null)
-                                    {
-                                        recipe.Add(theRecipe); //Anropar Add och skickar med 
-                                    }
                                     theRecipe = new Recipe(line); //Skapar nytt objekt som skikar med line
+                                    recipes.Add(theRecipe); //Anropar Add och skickar med 
                                 }
                                 else if (status == RecipeReadStatus.Ingredient) //
                                 {
@@ -221,19 +216,17 @@ namespace FiledRecipes.Domain
                             }
                         }
                     }
-
-               //Lägger till det sista receptet i listan med recept
-                recipe.Add(theRecipe);
                 }
 
                //Tar bort tomma platser i listan med recept
-                recipe.TrimExcess();
+                recipes.TrimExcess();
 
                //Sortera listan med recept med avseende på receptens namn.
-               IEnumerable<IRecipe> sortedRecipes = recipe.OrderBy(ReadRecipeSatatus => ReadRecipeSatatus.Name);
+               IEnumerable<IRecipe> sortedRecipes = recipes.OrderBy(ReadRecipeSatatus => ReadRecipeSatatus.Name);
 
                //Tilldela avsett fält i klassen, _recipes, en referens till den sorterade listan.
                _recipes = new List<IRecipe>(sortedRecipes);
+               _recipes = recipes;
 
               //Tilldela avsedd egenskap i klassen, IsModified, ett värde som indikerar att listan med recept är oförändrad.
                IsModified = false;
@@ -256,17 +249,34 @@ namespace FiledRecipes.Domain
      //Öppnar en textfil och skriver recepten rad för rad till textfilen
         public void Save()
         {
-            try
+
+            using (StreamWriter writer = new StreamWriter(_path))
             {
-                using (StreamWriter writer = new StreamWriter(_path))
+                //Lopar alla recept
+                foreach (IRecipe recipe in _recipes)
                 {
-                    writer.WriteLine(_recipes);
+                    writer.WriteLine(SectionRecipe);
+                    writer.WriteLine(recipe.Name);
+                    writer.WriteLine(SectionIngredients);
+
+                    //Lopar alla ingredienser
+                    foreach (IIngredient ingredient in recipe.Ingredients)
+                    {
+                           writer.WriteLine("{0};{1};{2}", ingredient.Amount, ingredient.Measure, ingredient.Name);
+                    }
+
+                    writer.WriteLine(SectionInstructions);
+
+                    //Lopar alla instruktioner
+                    foreach (string instruction in recipe.Instructions)
+                    {
+                        writer.WriteLine(instruction);
+                    }
+
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+                IsModified = false;
+                OnRecipesChanged(EventArgs.Empty);
+            } 
         }
     }
 }
